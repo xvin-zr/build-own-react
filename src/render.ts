@@ -24,3 +24,25 @@ export default function render(
     // append to container
     container.appendChild(dom);
 }
+
+let nextUnitOfWork: undefined;
+
+function workLoop(deadline: IdleDeadline) {
+    // Flag to determine if the browser needs to yield control
+    let shouldYield = false;
+
+    // Continue working on units of work until we need to yield
+    while (nextUnitOfWork && !shouldYield) {
+        // Perform the current unit of work and get the next one
+        nextUnitOfWork = performUnitOfWork(nextUnitOfWork);
+        // Check if the remaining time is less than 1ms to yield control
+        shouldYield = deadline.timeRemaining() < 1;
+    }
+
+    // Schedule the next work loop during the browser's idle periods
+    requestIdleCallback(workLoop);
+}
+
+requestIdleCallback(workLoop);
+
+function performUnitOfWork(work) {}
