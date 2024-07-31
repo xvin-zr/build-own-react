@@ -1,0 +1,20 @@
+{
+  "name": "build-own-react",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "format": "bun prettier . --write"
+  },
+  "devDependencies": {
+    "prettier": "3.3.3",
+    "typescript": "^5.2.2",
+    "vite": "^5.3.4"
+  },
+  "dependencies": {
+    "@types/react-dom": "^18.3.0"
+  }
+}
