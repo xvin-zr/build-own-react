@@ -4,7 +4,7 @@ import render from './render';
 const elem = createElement(
     'h1',
     { id: 'title' },
-    'hello',
+    'hello ',
     createElement('a', { href: 'https://www.apple.com.cn' }, 'Apple'),
 );
 

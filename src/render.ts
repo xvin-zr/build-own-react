@@ -20,7 +20,7 @@ function createDOM(fiber: Fiber) {
 }
 
 export default function render(element: RNode, container: HTMLElement): void {
-    nextUnitOfWork = {
+    wipRoot = {
         type: 'div',
         dom: container,
         props: {
@@ -30,9 +30,28 @@ export default function render(element: RNode, container: HTMLElement): void {
         child: null,
         parent: null,
     };
+
+    nextUnitOfWork = wipRoot;
 }
 
 let nextUnitOfWork: Fiber | undefined;
+
+// work in progress root
+let wipRoot: Fiber | undefined;
+
+function commitRoot(): void {
+    commitWork(wipRoot?.child ?? null);
+    wipRoot = undefined;
+}
+
+function commitWork(fiber: Fiber | null): void {
+    if (!fiber) return;
+
+    const parentDOM = fiber.parent?.dom;
+    parentDOM?.appendChild(fiber.dom!);
+    commitWork(fiber.child);
+    commitWork(fiber.sibling);
+}
 
 function workLoop(deadline: IdleDeadline) {
     // Flag to determine if the browser needs to yield control
@@ -49,6 +68,11 @@ function workLoop(deadline: IdleDeadline) {
 
     // Schedule the next work loop during the browser's idle periods
     requestIdleCallback(workLoop);
+
+    // commit phase
+    if (!nextUnitOfWork && wipRoot) {
+        commitRoot();
+    }
 }
 
 requestIdleCallback(workLoop);
@@ -57,11 +81,6 @@ function performUnitOfWork(fiber: Fiber): Fiber | undefined {
     // create dom element
     if (!fiber.dom) {
         fiber.dom = createDOM(fiber);
-    }
-
-    // append to parent
-    if (fiber.parent) {
-        fiber.parent.dom?.appendChild(fiber.dom);
     }
 
     // create new fibers for children
