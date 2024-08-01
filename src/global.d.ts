@@ -20,7 +20,7 @@ type TextElement = {
     };
 };
 
-type Fiber =
+type Fiber = (
     | {
           type: HTMLElementTagName;
           dom: HTMLElement | null;
@@ -28,9 +28,6 @@ type Fiber =
               [key: string]: unknown;
               children: RNode[];
           };
-          sibling: Fiber | null;
-          child: Fiber | null;
-          parent: Fiber | null;
       }
     | {
           type: 'TEXT_ELEMENT';
@@ -39,7 +36,15 @@ type Fiber =
               nodeValue: string;
               children: [];
           };
-          sibling: Fiber | null;
-          child: Fiber | null;
-          parent: Fiber | null;
-      };
+      }
+) & {
+    sibling: Fiber | null;
+    child: Fiber | null;
+    parent: Fiber | null;
+    alternate?: Fiber; // a link to the old fiber
+    effectTag?: EffectTag;
+};
+
+type Props = Fiber['props'];
+
+type EffectTag = 'PLACEMENT' | 'UPDATE' | 'DELETION';
