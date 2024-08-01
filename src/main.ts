@@ -1,22 +1,12 @@
 import createElement from './create-element';
 import render from './render';
 
+function App({ name }: { name: string }) {
+    return createElement('h1', null, 'Hi, ', name);
+}
+
 const container = document.getElementById('root') as HTMLDivElement;
-function renderer(value: string = '') {
-    const elem = createElement(
-        'div',
-        null,
-        createElement('input', {
-            oninput: handleInput,
-        }),
-        createElement('h1', null, value),
-    );
 
-    render(elem, container);
-}
+const elem = createElement(App, { name: 'React' });
 
-function handleInput(e: React.ChangeEvent<HTMLInputElement>) {
-    renderer(e.target.value);
-}
-
-renderer('Type to render');
+render(elem, container);

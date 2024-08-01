@@ -5,7 +5,7 @@
  * @param children Zero or more child nodes. They can be any React nodes, including React elements, strings, numbers, portals, empty nodes (null, undefined, true, and false).
  */
 export default function createElement<P extends Record<string, unknown>>(
-    type: HTMLElementTagName,
+    type: HTMLElementTagName | 'TEXT_ELEMENT' | ((props: P) => RNode),
     props: P | null = null,
     ...children: Child[]
 ): RNode {
@@ -19,7 +19,7 @@ export default function createElement<P extends Record<string, unknown>>(
                     : createTextElement(String(child)),
             ),
         },
-    };
+    } as RNode;
 }
 
 function createTextElement(text: string): TextElement {

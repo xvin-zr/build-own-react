@@ -2,7 +2,7 @@ type HTMLElementTagName = keyof HTMLElementTagNameMap;
 
 type Child = string | number | boolean | null | undefined | RNode;
 
-type RNode = ObjElement | TextElement;
+type RNode = ObjElement | TextElement | FuncElement<Record<string, unknown>>;
 
 type ObjElement = {
     type: HTMLElementTagName;
@@ -17,6 +17,13 @@ type TextElement = {
     props: {
         nodeValue: string;
         children: [];
+    };
+};
+
+type FuncElement<P extends Record<string, unknown>> = {
+    type: (props: P) => RNode;
+    props: P & {
+        children: RNode[];
     };
 };
 
@@ -35,6 +42,14 @@ type Fiber = (
           props: {
               nodeValue: string;
               children: [];
+          };
+      }
+    | {
+          type: (props: Props) => RNode;
+          dom: HTMLElement | null;
+          props: {
+              [key: string]: unknown;
+              children: RNode[];
           };
       }
 ) & {
