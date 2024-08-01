@@ -40,7 +40,7 @@ let nextUnitOfWork: Fiber | undefined;
 let wipRoot: Fiber | undefined;
 
 function commitRoot(): void {
-    commitWork(wipRoot?.child ?? null);
+    commitWork(wipRoot!.child);
     wipRoot = undefined;
 }
 
