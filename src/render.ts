@@ -1,31 +1,38 @@
-export default function render(
-    element: RNode,
-    container: HTMLElement | Text,
-): void {
+// for compatible with Safari
+const requestIdleCallback = window.requestIdleCallback ?? setTimeout;
+
+function createDOM(fiber: Fiber) {
     // create element
     const dom =
-        element.type === 'TEXT_ELEMENT'
+        fiber.type === 'TEXT_ELEMENT'
             ? document.createTextNode('')
-            : document.createElement(element.type);
+            : document.createElement(fiber.type);
 
     // assign props except `children`
-    Object.keys(element.props)
+    Object.keys(fiber.props)
         .filter((key) => key !== 'children')
         .forEach((key) => {
             // @ts-ignore
-            dom[key] = element.props[key];
+            dom[key] = fiber.props[key];
         });
 
-    // recursively render children
-    element.props.children.forEach((child) => {
-        render(child, dom);
-    });
-
-    // append to container
-    container.appendChild(dom);
+    return dom;
 }
 
-let nextUnitOfWork: undefined;
+export default function render(element: RNode, container: HTMLElement): void {
+    nextUnitOfWork = {
+        type: 'div',
+        dom: container,
+        props: {
+            children: [element],
+        },
+        sibling: null,
+        child: null,
+        parent: null,
+    };
+}
+
+let nextUnitOfWork: Fiber | undefined;
 
 function workLoop(deadline: IdleDeadline) {
     // Flag to determine if the browser needs to yield control
@@ -35,8 +42,9 @@ function workLoop(deadline: IdleDeadline) {
     while (nextUnitOfWork && !shouldYield) {
         // Perform the current unit of work and get the next one
         nextUnitOfWork = performUnitOfWork(nextUnitOfWork);
-        // Check if the remaining time is less than 1ms to yield control
-        shouldYield = deadline.timeRemaining() < 1;
+
+        // Check if the remaining time is less than 1ms to yield control. Won't work in Safari
+        shouldYield = deadline?.timeRemaining() < 1;
     }
 
     // Schedule the next work loop during the browser's idle periods
@@ -45,4 +53,54 @@ function workLoop(deadline: IdleDeadline) {
 
 requestIdleCallback(workLoop);
 
-function performUnitOfWork(work) {}
+function performUnitOfWork(fiber: Fiber): Fiber | undefined {
+    // create dom element
+    if (!fiber.dom) {
+        fiber.dom = createDOM(fiber);
+    }
+
+    // append to parent
+    if (fiber.parent) {
+        fiber.parent.dom?.appendChild(fiber.dom);
+    }
+
+    // create new fibers for children
+    const elements = fiber.props.children;
+    let prevSibling: Fiber | null = null;
+
+    // build Fiber Tree
+    for (let i = 0; i < elements.length; i++) {
+        const newFiber = {
+            type: elements[i].type,
+            props: elements[i].props,
+            parent: fiber,
+            dom: null,
+            sibling: null,
+            child: null,
+        } as Fiber;
+
+        // be the child if it's the first element
+        if (i === 0) {
+            fiber.child = newFiber;
+        } else {
+            // be the sibling if it's not the first element
+            prevSibling!.sibling = newFiber;
+        }
+
+        prevSibling = newFiber;
+    }
+
+    // return next fiber
+    if (fiber.child) {
+        return fiber.child;
+    }
+
+    let nextFiber: Fiber | null = fiber;
+    while (nextFiber) {
+        if (nextFiber.sibling) {
+            return nextFiber.sibling;
+        }
+        nextFiber = nextFiber.parent;
+    }
+    return undefined;
+}

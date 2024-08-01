@@ -19,3 +19,27 @@ type TextElement = {
         children: [];
     };
 };
+
+type Fiber =
+    | {
+          type: HTMLElementTagName;
+          dom: HTMLElement | null;
+          props: {
+              [key: string]: unknown;
+              children: RNode[];
+          };
+          sibling: Fiber | null;
+          child: Fiber | null;
+          parent: Fiber | null;
+      }
+    | {
+          type: 'TEXT_ELEMENT';
+          dom: Text | null;
+          props: {
+              nodeValue: string;
+              children: [];
+          };
+          sibling: Fiber | null;
+          child: Fiber | null;
+          parent: Fiber | null;
+      };
