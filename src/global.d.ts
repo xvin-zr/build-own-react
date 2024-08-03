@@ -58,6 +58,12 @@ type Fiber = (
     parent: Fiber | null;
     alternate?: Fiber; // a link to the old fiber
     effectTag?: EffectTag;
+    hooks?: Hook<unknown>[];
+};
+
+type Hook<S> = {
+    state: S;
+    queue?: ((prevState: S) => S)[];
 };
 
 type Props = Fiber['props'];

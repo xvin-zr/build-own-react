@@ -195,9 +195,46 @@ function updateHostComponent(fiber: Fiber) {
     reconcileChildren(fiber, elements);
 }
 
+// remember the last time fiber
+let wipFiber: Fiber | undefined;
+let hookIndex = 0;
+
 function updateFunctionComponent(fiber: Fiber) {
+    wipFiber = fiber;
+    hookIndex = 0;
+    wipFiber.hooks = [];
     const children = [(fiber.type as Function)(fiber.props)];
     reconcileChildren(fiber, children);
+}
+
+export function useState<S>(init: S): [S, typeof setState] {
+    const oldHook = wipFiber?.alternate?.hooks?.[hookIndex] as Hook<S>;
+
+    const hook: Hook<S> = {
+        state: oldHook ? oldHook.state : init,
+        queue: [],
+    };
+
+    const actions = oldHook?.queue ?? [];
+    actions.forEach((action) => {
+        hook.state = action(hook.state);
+    });
+
+    function setState(action: (prevState: S) => S) {
+        hook.queue!.push(action);
+        wipRoot = {
+            dom: currRoot!.dom,
+            props: currRoot!.props,
+            alternate: currRoot,
+        } as Fiber;
+        nextUnitOfWork = wipRoot;
+        deletions = [];
+    }
+
+    wipFiber?.hooks?.push(hook as Hook<unknown>);
+    hookIndex++;
+
+    return [hook.state, setState];
 }
 
 function reconcileChildren(wipFiber: Fiber, elements: RNode[] | []) {
