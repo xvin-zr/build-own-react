@@ -8,13 +8,7 @@ function createDOM(fiber: Fiber) {
             ? document.createTextNode('')
             : document.createElement(fiber.type as HTMLElementTagName);
 
-    // assign props except `children`
-    Object.keys(fiber.props)
-        .filter((key) => key !== 'children')
-        .forEach((key) => {
-            // @ts-ignore
-            dom[key] = fiber.props[key];
-        });
+    updateDOM(dom, { children: [] }, fiber.props);
 
     return dom;
 }
@@ -89,42 +83,41 @@ function updateDOM(
     prevProps: Props,
     nextProps: Props,
 ) {
-    // Remove old or changed event listeners
+    //Remove old or changed event listeners
     Object.keys(prevProps)
         .filter(isEvent)
         .filter(
             (key) => !(key in nextProps) || isNew(prevProps, nextProps)(key),
         )
-        .forEach((key) => {
-            const eventType = key.toLowerCase().substring(2);
-            dom.removeEventListener(eventType, (prevProps as any)[key]);
+        .forEach((name) => {
+            const eventType = name.toLowerCase().substring(2);
+            dom.removeEventListener(eventType, (prevProps as any)[name]);
+        });
+
+    // Remove old properties
+    Object.keys(prevProps)
+        .filter((key) => key !== 'children' && !key.startsWith('on'))
+        .filter((key) => !(key in nextProps))
+        .forEach((name) => {
+            (dom as any)[name] = '';
+        });
+
+    // Set new or changed properties
+    Object.keys(nextProps)
+        .filter((key) => key !== 'children' && !key.startsWith('on'))
+        .filter(isNew(prevProps, nextProps))
+        .forEach((name) => {
+            (dom as any)[name] = (nextProps as any)[name];
         });
 
     // Add event listeners
     Object.keys(nextProps)
         .filter(isEvent)
         .filter(isNew(prevProps, nextProps))
-        .forEach((key) => {
-            const eventType = key.toLowerCase().substring(2);
-            dom.addEventListener(eventType, (nextProps as any)[key]);
+        .forEach((name) => {
+            const eventType = name.toLowerCase().substring(2);
+            dom.addEventListener(eventType, (nextProps as any)[name]);
         });
-
-    // Remove old properties
-    Object.keys(prevProps)
-        .filter((key) => key !== 'children')
-        .filter((key) => !(key in nextProps))
-        .forEach((key) => ((dom as any)[key] = ''));
-
-    // Set new or changed properties
-    Object.keys(nextProps)
-        .filter((key) => key !== 'children')
-        .filter(isNew(prevProps, nextProps))
-        .forEach(
-            (key) =>
-                ((dom as any)[key] = (nextProps as Record<string, unknown>)[
-                    key
-                ]),
-        );
 
     function isNew(prevProps: Props, nextProps: Props) {
         return (key: string) =>
